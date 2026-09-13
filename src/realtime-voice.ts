@@ -1,5 +1,18 @@
 import type { VoiceState } from './voice-session';
 export type RealtimeCallbacks={onState:(state:VoiceState,active:boolean)=>void;onInterim:(text:string)=>void;onError:(text:string)=>void;onReply:(text:string)=>void;command:(text:string)=>string;context:()=>unknown};
+export async function readVoiceResponse(response:Response,format:'json'|'sdp'){
+ const body=await response.text();let data:any;
+ try{data=JSON.parse(body);}catch{/* Proxies can return empty bodies or HTML errors. */}
+ if(response.status===401)throw new Error(data?.error||'Sign in to use voice inspection.');
+ if(!response.ok)throw new Error(typeof data?.error==='string'?data.error:`Voice service is unavailable (HTTP ${response.status}). Reload the app and retry.`);
+ if(format==='json'){
+  if(!data||typeof data.configured!=='boolean')throw new Error('Voice server is unavailable. Reload the app; for localhost, restart the development server.');
+  if(!data.configured)throw new Error('Voice is not configured on the server. Contact the site owner.');
+  return data;
+ }
+ if(!body.startsWith('v=0'))throw new Error('Voice server returned an invalid connection. Reload the app and retry.');
+ return body;
+}
 export function executeVoiceTool(name:string,args:string,cb:Pick<RealtimeCallbacks,'command'|'context'>){
  try{const input=JSON.parse(args);if(name==='get_inspection')return cb.context();
   if(name!=='inspection_command'||typeof input.command!=='string'||!input.command.trim()||input.command.length>2000)return {error:'Invalid inspection command. Nothing changed.'};
@@ -18,6 +31,9 @@ export class RealtimeVoice {
   if(this.active)return;this.active=true;const version=++this.version;this.cb.onError('');this.state('connecting');this.seen.clear();this.pending.clear();this.completed.clear();this.captions={input:"",output:""};this.captionEnds={input:0,output:0};this.heardInspector=false;this.ready=false;
   this.timer=setTimeout(()=>this.fail('Voice connection timed out. Tap to retry.'),30000);
   try{
+   this.abort=new AbortController();
+   await readVoiceResponse(await fetch('/api/voice/status',{signal:this.abort.signal,cache:'no-store'}),'json');
+   if(version!==this.version)return;
    if(!navigator.mediaDevices?.getUserMedia)throw new Error('Microphone requires localhost or HTTPS and a supported browser.');
    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
    if(version!==this.version){stream.getTracks().forEach(t=>t.stop());return;}this.stream=stream;
@@ -33,8 +49,7 @@ export class RealtimeVoice {
    if(pc.iceGatheringState!=='complete')await new Promise<void>((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Voice network setup timed out.')),8000);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(timer);resolve();}});});
    if(version!==this.version)return;
    this.abort=new AbortController();const response=await fetch('/api/voice/session',{method:'POST',headers:{'Content-Type':'application/sdp'},body:pc.localDescription?.sdp,signal:this.abort.signal});
-   if(!response.ok){const error=await response.json();throw new Error(error.error||'Voice could not connect.');}
-   const sdp=await response.text();if(version!==this.version)return;await pc.setRemoteDescription({type:'answer',sdp});
+   const sdp=await readVoiceResponse(response,'sdp');if(version!==this.version)return;await pc.setRemoteDescription({type:'answer',sdp});
   }catch(e){if(version===this.version)this.fail(e instanceof DOMException&&e.name==='NotAllowedError'?'Microphone blocked. Allow access, then tap to retry.':e instanceof Error?e.message:'Voice could not connect.');}
  }
  private monitorPlayback(stream:MediaStream){

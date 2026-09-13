@@ -1,0 +1,8 @@
+node_modules/
+.vite/
+dist/
+*.tsbuildinfo
+.env*
+!.env.example
+modeling/.venv/
+*.blend1

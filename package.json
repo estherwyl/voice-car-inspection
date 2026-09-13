@@ -1,0 +1,35 @@
+{
+  "name": "car-inspection-companion",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc -b && node scripts/build-sites.mjs",
+    "test": "node --import tsx --test src/*.test.ts",
+    "preview": "vite preview --host 127.0.0.1",
+    "model:optimize": "node modeling/optimize.mjs",
+    "model:validate": "node --import tsx modeling/validate-model.ts",
+    "model:build": "./modeling/build.sh && node modeling/optimize.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
+    "@types/node": "^22.20.2",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.180.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "meshoptimizer": "^0.25.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  }
+}

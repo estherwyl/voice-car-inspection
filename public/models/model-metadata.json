@@ -1,0 +1,270 @@
+{
+  "name": "Subaru XV GT Edition inspired inspection reference",
+  "license": "MIT; original geometry",
+  "exact_reconstruction": false,
+  "authoring": "Blender 5.2.1 LTS",
+  "part_count": 32,
+  "mesh_count": 163,
+  "triangles": 555692,
+  "parts": {
+    "left-front-door": {
+      "pivot": [
+        1,
+        0.95,
+        -0.5
+      ],
+      "meshes": 10
+    },
+    "right-front-door": {
+      "pivot": [
+        -1,
+        0.95,
+        -0.5
+      ],
+      "meshes": 10
+    },
+    "left-rear-door": {
+      "pivot": [
+        1,
+        0.95,
+        0.65
+      ],
+      "meshes": 10
+    },
+    "right-rear-door": {
+      "pivot": [
+        -1,
+        0.95,
+        0.65
+      ],
+      "meshes": 10
+    },
+    "left-front-fender": {
+      "pivot": [
+        1,
+        0.85,
+        -1.57
+      ],
+      "meshes": 2
+    },
+    "right-front-fender": {
+      "pivot": [
+        -1,
+        0.85,
+        -1.57
+      ],
+      "meshes": 2
+    },
+    "left-rear-fender": {
+      "pivot": [
+        1,
+        0.9,
+        1.64
+      ],
+      "meshes": 3
+    },
+    "right-rear-fender": {
+      "pivot": [
+        -1,
+        0.9,
+        1.64
+      ],
+      "meshes": 3
+    },
+    "left-mirror": {
+      "pivot": [
+        1.07,
+        1.26,
+        -0.94
+      ],
+      "meshes": 4
+    },
+    "right-mirror": {
+      "pivot": [
+        -1.07,
+        1.26,
+        -0.94
+      ],
+      "meshes": 4
+    },
+    "left-front-wheel": {
+      "pivot": [
+        0.99,
+        0.43,
+        -1.42
+      ],
+      "meshes": 6
+    },
+    "right-front-wheel": {
+      "pivot": [
+        -0.99,
+        0.43,
+        -1.42
+      ],
+      "meshes": 6
+    },
+    "left-rear-wheel": {
+      "pivot": [
+        0.99,
+        0.43,
+        1.44
+      ],
+      "meshes": 6
+    },
+    "right-rear-wheel": {
+      "pivot": [
+        -0.99,
+        0.43,
+        1.44
+      ],
+      "meshes": 6
+    },
+    "bonnet": {
+      "pivot": [
+        0,
+        1.07,
+        -1.58
+      ],
+      "meshes": 3
+    },
+    "boot": {
+      "pivot": [
+        0,
+        1.06,
+        2.02
+      ],
+      "meshes": 6
+    },
+    "front-bumper": {
+      "pivot": [
+        0,
+        0.69,
+        -2.14
+      ],
+      "meshes": 5
+    },
+    "rear-bumper": {
+      "pivot": [
+        0,
+        0.67,
+        2.1
+      ],
+      "meshes": 4
+    },
+    "windshield": {
+      "pivot": [
+        0,
+        1.39,
+        -0.77
+      ],
+      "meshes": 2
+    },
+    "rear-glass": {
+      "pivot": [
+        0,
+        1.43,
+        1.52
+      ],
+      "meshes": 3
+    },
+    "roof": {
+      "pivot": [
+        0,
+        1.75,
+        0.36
+      ],
+      "meshes": 3
+    },
+    "lights": {
+      "pivot": [
+        0,
+        1,
+        -2.11
+      ],
+      "meshes": 6
+    },
+    "driver-seat": {
+      "pivot": [
+        -0.47,
+        0.88,
+        -0.23
+      ],
+      "meshes": 7
+    },
+    "passenger-seat": {
+      "pivot": [
+        0.47,
+        0.88,
+        -0.23
+      ],
+      "meshes": 7
+    },
+    "rear-seat": {
+      "pivot": [
+        0,
+        0.89,
+        1
+      ],
+      "meshes": 7
+    },
+    "dashboard": {
+      "pivot": [
+        0,
+        1.1,
+        -0.93
+      ],
+      "meshes": 7
+    },
+    "steering": {
+      "pivot": [
+        -0.49,
+        1.29,
+        -0.54
+      ],
+      "meshes": 3
+    },
+    "console": {
+      "pivot": [
+        0,
+        0.72,
+        0.2
+      ],
+      "meshes": 4
+    },
+    "belts": {
+      "pivot": [
+        0.82,
+        1.2,
+        0.15
+      ],
+      "meshes": 3
+    },
+    "cabin-trim": {
+      "pivot": [
+        0.85,
+        0.98,
+        0.5
+      ],
+      "meshes": 2
+    },
+    "engine": {
+      "pivot": [
+        0,
+        0.79,
+        -1.55
+      ],
+      "meshes": 6
+    },
+    "underbody": {
+      "pivot": [
+        0,
+        0.32,
+        0
+      ],
+      "meshes": 3
+    }
+  },
+  "glb_bytes": 5606452,
+  "uncompressed_glb_bytes": 27895908,
+  "compression": "EXT_meshopt_compression; all 32 component identities retained"
+}

@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Voice UI verification · simulated audio</title><style>#qa{position:fixed;top:0;left:0;right:0;z-index:200;background:#192c23;color:white;padding:6px;display:flex;gap:6px;flex-wrap:wrap;font:11px system-ui}#qa button{padding:4px;font:10px system-ui}#root{padding-top:62px}</style></head><body><div id="qa"><b>TEST ONLY · simulated microphone</b><button data-say="Left front door is okay. Right rear door is okay.">Two doors okay</button><button data-say="Left rear door has a scratch.">Scratch</button><button data-say="Minor">Minor</button><button data-say="Actually that was the right front door.">Correction</button><button data-say="Driver seat is fine.">Driver seat</button><button data-say="What is left?">Unchecked</button><button data-say="Undo">Undo</button><button id="end">End connection</button><span id="qa-status"></span></div><div id="root"></div>
+<script>
+const realDB=window.indexedDB;
+Object.defineProperty(window,'indexedDB',{value:{open:(name,version)=>realDB.open(name+'-voice-ui-test',version)}});
+let current=null;
+class TestRecognition{
+ start(){current=this;queueMicrotask(()=>this.onstart?.());}
+ abort(){if(current===this)current=null;}
+}
+window.SpeechRecognition=TestRecognition;
+Object.defineProperty(window,'speechSynthesis',{value:{cancel(){},speak(u){setTimeout(()=>u.onend?.(),100);}}});
+document.querySelectorAll('[data-say]').forEach(button=>button.onclick=()=>{
+ if(!current){document.querySelector('#qa-status').textContent='Not listening';return;}
+ const words=button.dataset.say;
+ current.onresult?.({resultIndex:0,results:[{isFinal:true,0:{transcript:words}}]});
+ document.querySelector('#qa-status').textContent='Spoken: '+words;
+});
+document.querySelector('#end').onclick=()=>{const c=current;current=null;c?.onend?.();};
+</script><script type="module" src="/src/main.tsx"></script></body></html>

@@ -13,7 +13,13 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173/**. For a production bundle, run `npm run build`; `npm run preview` serves that bundle. Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY` on the server. The supplied local key is already configured. The Vite dev and preview servers provide `/api/voice/session`; a static-only deployment cannot provide live voice. The endpoint is restricted to localhost; add authentication and a configured HTTPS origin before remote deployment. Use localhost or HTTPS for microphone and camera access.
+Open **http://127.0.0.1:5173/**. For a production bundle, run `npm run build`; `npm run preview` serves that bundle. Copy `.env.example` to `.env.local` and set `OPENAI_API_KEY` on the server. The Vite dev and preview servers provide a localhost-only `/api/voice/session`. Use localhost or HTTPS for microphone and camera access.
+
+## ChatGPT Sites deployment
+
+The production build emits the browser app into `dist/client` and a Cloudflare-compatible voice server into `dist/server/index.js`. `.openai/hosting.json` identifies the existing Site. Preserve that identity for future deployments.
+
+Configure `OPENAI_API_KEY` as a Sites secret, with `OPENAI_LIVE_MODEL`, `OPENAI_DELEGATION_MODEL`, and `APP_ORIGIN` as server runtime settings. `APP_ORIGIN` must exactly match the deployed HTTPS origin. The hosted voice endpoint requires the Sites authenticated-user header and checks the request origin; session requests have a size limit and a per-user reconnect limit within each Worker instance. Sites access remains private to the owner. The build contains no API key. Device-local inspection records and photos remain in the browser where they were created; local-development records do not transfer to the deployed origin.
 
 ```sh
 npm test                 # Domain, conversation, voice and transition tests

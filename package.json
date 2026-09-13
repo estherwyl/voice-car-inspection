@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node scripts/build-sites.mjs",
     "test": "node --import tsx --test src/*.test.ts",
     "preview": "vite preview --host 127.0.0.1",
     "model:optimize": "node modeling/optimize.mjs",

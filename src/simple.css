@@ -93,3 +93,10 @@
 .simple-app .simple-stage .car-scene{height:clamp(250px,calc(100svh - 455px),650px);transition:none}
 @media(max-width:600px){.simple-app .simple-stage .car-scene{height:clamp(235px,calc(100svh - 455px),500px)}}
 .simple-app .car-scene.flat .part-pin:not(.selected) b{display:none}.simple-app .car-scene.flat .part-pin.selected b,.simple-app .car-scene.flat .part-pin:hover b,.simple-app .car-scene.flat .part-pin:focus-visible b{display:block;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);padding:4px 7px;background:#fff;border:1px solid #dce7d6;border-radius:5px;white-space:nowrap;max-width:none;font-size:10px;z-index:10}
+
+/* Product identity takes the primary heading on the vehicle selection page. */
+.vehicle-landing>header{margin-bottom:48px}
+.vehicle-landing .landing-brand{font-size:clamp(32px,4.8vw,46px);line-height:1.2;letter-spacing:-1.2px;margin:0;color:#203b34;max-width:820px}
+.vehicle-landing .landing-brand span{font-size:clamp(22px,3.3vw,32px);letter-spacing:-.5px;font-weight:500}
+.vehicle-landing main>h2{font-size:24px;letter-spacing:-.5px;margin:0 0 24px}
+@media(max-width:600px){.vehicle-landing>header{margin-bottom:32px}.vehicle-landing main>h2{font-size:22px}}

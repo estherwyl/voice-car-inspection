@@ -1,6 +1,6 @@
 # JARVICI
 
-Just A Rather Very Intelligent Car Inspection.
+Just A Rather Very Intelligent Car Inspector. Inspired by Tony Stark’s JARVIS.
 
 A working local MVP for inspecting a **2022 Subaru XV GT Edition EyeSight 2.0**: tap the microphone, describe observations, explore the Blender model in Three.js, attach evidence, correct findings, and export a report. The Subaru choice follows the source report and the user's clarification of the brief's conflicting BYD references.
 

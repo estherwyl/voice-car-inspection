@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Camera, RotateCcw, Check, LoaderCircle, AlertCircle, X, ClipboardList, MoreHorizontal, Info, History, LayoutGrid, Car, Focus, ArrowLeft, ArrowRight } from 'lucide-react';
 import CarScene from './CarScene';
+import BrandHeader from './BrandHeader';
 import DetailPanel, { EvidenceViewer } from './DetailPanel';
 import CameraModal from './CameraModal';
 import Review from './Review';
@@ -122,7 +123,7 @@ export default function App(){
  const complete=completeness(record),issues=record.findings.filter(f=>!f.resolved).length;
  const rows=CHECKS.filter(c=>(section==='All'||c.section===section)&&(filter==='all'||filter==='unchecked'&&statusOf(record,c.id)==='not-inspected'||filter==='issues'&&statusOf(record,c.id)==='to-be-rectified'||filter==='observed'&&statusOf(record,c.id)!=='not-inspected'));
  const label=voiceState==='listening'?'Listening':voiceState==='speaking'?'Companion speaking':voiceState==='thinking'?'Updating':voiceState==='connecting'?'Connecting':voiceState==='error'?'Tap to retry':reply?'Tap to continue':'Tap to inspect';
- if(page==='vehicles')return <div className="vehicle-landing"><header><h1 className="landing-brand">JARVICI <span>- Just A Rather Very Intelligent Car Inspector</span></h1></header><main><h2>Select a vehicle</h2><button className="vehicle-choice" onClick={()=>setPage('inspection')} aria-label="Select 2022 Subaru XV GT Edition"><img src="/models/subaru-xv-studio.png" alt="White Subaru XV reference model"/><span className="vehicle-choice-info"><span><small>2022 · GT Edition</small><strong>Subaru XV</strong></span><span className="vehicle-choice-action">{record.started?'Resume':'Inspect'}<ArrowRight size={18}/></span></span></button></main></div>;
+ if(page==='vehicles')return <div className="vehicle-landing"><BrandHeader/><main><h2>Select a vehicle</h2><button className="vehicle-choice" onClick={()=>setPage('inspection')} aria-label="Select 2022 Subaru XV GT Edition"><img src="/models/subaru-xv-studio.png" alt="White Subaru XV reference model"/><span className="vehicle-choice-info"><span><small>2022 · GT Edition</small><strong>Subaru XV</strong></span><span className="vehicle-choice-action">{record.started?'Resume':'Inspect'}<ArrowRight size={18}/></span></span></button></main></div>;
  return <div className="simple-app">
   <header className="simple-header"><button className="icon-button vehicle-back" aria-label="Choose vehicle" onClick={()=>{session.current?.stop();setPage('vehicles');}}><ArrowLeft size={19}/></button><div><span className="simple-brand">JARVICI</span><h1>Subaru XV <small>2022</small></h1></div><div className="simple-header-actions">
    <span className={'simple-save '+save} title={save==='saved'?'Saved in this browser':save==='saving'?'Saving':'Save failed'} aria-label={save==='saved'?'Saved locally':save==='saving'?'Saving locally':'Save failed'} role="status">{save==='saving'?<LoaderCircle size={15} className="spin"/>:save==='saved'?<Check size={15}/>:<AlertCircle size={15}/>}</span>

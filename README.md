@@ -21,6 +21,8 @@ npm run model:validate   # Compressed geometry, component IDs, and layout bounds
 npm run build            # TypeScript and production bundle
 ```
 
+Voice uses `OPENAI_LIVE_MODEL=gpt-live-1`; the separate tool backend uses `OPENAI_DELEGATION_MODEL=gpt-5.6-terra`. Both are server-side settings. The Live API handles speech and delegates inspection actions to the backend. The browser waits for `session.started`, processes nested tool events, and requests `session.close` when stopped. See the [official migration guide](https://developers.openai.com/api/docs/guides/live-migration).
+
 ## Inspect by voice
 
 Choose the Subaru on the landing page, then tap the large **microphone avatar** once and allow microphone access. Speak normally; no text input or part selection is needed. Tap again, or say “pause”, to stop.
@@ -34,7 +36,7 @@ Choose the Subaru on the landing page, then tap the large **microphone avatar** 
 
 The car, one compact progress indicator, and the voice avatar form the main workspace. **Report** opens the checklist on demand; tapping a component opens optional manual details. One **Assembled → Parts** slider controls all 32 parts in the same canvas. The first 45% spreads vehicle systems; the remaining 55% packs parts with their centres on z = 0. Thickness and shading remain. Near full expansion, dragging pans instead of rotating; scrolling or pinching zooms. History, sources, and prototype details are under **More → About/History**.
 
-The companion uses OpenAI Realtime over WebRTC for speech, turn detection, spoken replies, and tool calls. Tool results update the existing inspection record and are returned to the model before it confirms an action. Disconnects stop the microphone and show a retry control; reconnecting reads the saved inspection. Audio and inspection context are sent to OpenAI while connected. Photos remain local.
+The companion uses GPT-Live-1 over WebRTC for speech, turn detection, spoken replies, and tool calls. Tool results update the existing inspection record and are returned to the model before it confirms an action. Disconnects stop the microphone and show a retry control; reconnecting reads the saved inspection. Audio and inspection context are sent to OpenAI while connected. Photos remain local.
 
 Export prepares self-contained HTML with embedded photos. **Preview / print** provides a PDF route if the browser does not save the download. Finalization requires all checks assessed, severities supplied, local save completed, and inspector acknowledgement.
 
@@ -67,7 +69,7 @@ The selected Subaru is petrol and automatic. EV-only, manual-clutch, and equipme
 
 ## Prototype boundaries
 
-- **Voice uses OpenAI Realtime with validated local inspection tools.** The API key stays in `.env.local` on the server and is excluded from Git and the browser bundle. The old browser-speech adapter remains only for isolated test pages. A valid funded OpenAI project and microphone access are required.
+- **Voice uses GPT-Live-1 with validated local inspection tools.** The API key stays in `.env.local` on the server and is excluded from Git and the browser bundle. The old browser-speech adapter remains only for isolated test pages. A valid funded OpenAI project and microphone access are required.
 - Notes and resized photos persist in **IndexedDB in this browser**, with visible save/failure states, retry, and export of the current record. There is one active record, no account, cloud sync, collaboration, or multi-tab conflict resolution. Use one inspection tab at a time. Clearing browser data removes local progress.
 - Camera capture uses `getUserMedia` and has a visible capture control, voice capture request, preview, retake, upload, and permission/error handling. Physical camera and microphone operation still need device testing. The voice workflow was exercised through a simulated recognition adapter, and the upload-to-evidence flow with an explicitly synthetic image.
 - Grading is **illustrative and configurable**, based only on recorded findings. Completeness is separate; missing severity withholds the grade, serious findings cap it at C, and critical findings at D. Deductions can lower the grade further. Missing evidence remains visible for inspector review.

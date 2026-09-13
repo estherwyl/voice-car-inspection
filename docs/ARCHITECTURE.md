@@ -29,7 +29,7 @@ Camera previews are transient until attached. Persisted photos are resized image
 
 ## Next integrations
 
-OpenAI Realtime now connects through a server-side SDP exchange, with provider secrets confined to `.env.local`. Model tool calls use the validated local conversation actions, preserving clarification, evidence association, and inspector-assessed severity. Remote deployment still requires authentication and an explicit HTTPS origin policy. The current main workspace has no text input; the optional detail drawer retains manual edits.
+GPT-Live-1 now connects through a server-side SDP exchange, with provider secrets confined to `.env.local`. Model tool calls use the validated local conversation actions, preserving clarification, evidence association, and inspector-assessed severity. Remote deployment still requires authentication and an explicit HTTPS origin policy. The current main workspace has no text input; the optional detail drawer retains manual edits.
 
 For multiple vehicles, make checklist, part mapping, model URL and applicability a vehicle definition rather than module constants. Introduce versioned record migrations before changing check IDs. A backend should add authenticated storage, photo object storage, revision checks and record retention; the current IndexedDB adapter is intentionally local and single-tab.
 

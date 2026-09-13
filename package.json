@@ -10,7 +10,9 @@
     "preview": "vite preview --host 127.0.0.1",
     "model:optimize": "node modeling/optimize.mjs",
     "model:validate": "node --import tsx modeling/validate-model.ts",
-    "model:build": "./modeling/build.sh && node modeling/optimize.mjs"
+    "model:build": "./modeling/build.sh && node modeling/optimize.mjs",
+    "model:build:bmw": "./modeling/build.sh build_bmw.py && node modeling/optimize.mjs --bmw",
+    "model:validate:bmw": "node --import tsx modeling/validate-model.ts --bmw"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

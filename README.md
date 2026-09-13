@@ -82,3 +82,17 @@ The selected Subaru is petrol and automatic. EV-only, manual-clutch, and equipme
 - Export content and embedded images were verified in the in-app preview. A browser download completion event could not be verified in the Codex in-app browser; the preview/print route is available. Hardware performance on older phones has not been profiled.
 
 See [`docs/VALIDATION.md`](docs/VALIDATION.md) for validation evidence and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for extension points.
+
+## BMW 330i selection
+
+The landing page lists the black **2021 BMW 330i M Sport 2.0 AT** before the Subaru.
+The BMW reference is [Carro J4W6XW8V4O](https://carro.co/my/en/buy/bmw/best/2021-bmw-330i-m-sport-2-0-at/J4W6XW8V4O#inspection), checked on 13 September 2026, and the nine supplied exterior/interior photos.
+Its original Blender geometry approximates the sedan body, kidney grilles, wheels, cabin and trunk; it is not manufacturer CAD or an exact reconstruction.
+
+- `modeling/bmw-330i-inspection.blend`: editable studio and vehicle model.
+- `modeling/build_bmw.py`: reproducible Blender authoring script.
+- `public/models/bmw-330i-inspection.glb`: 32 selectable inspection components.
+- `public/models/bmw-330i-studio.png`: landing card render.
+- `npm run model:build:bmw` / `npm run model:validate:bmw`: rebuild and validate.
+
+Vehicle definitions live in `src/vehicles.ts`. Selection controls the model, title, export identity and voice context. Each vehicle has its own browser-local record; the original Subaru `active` storage key is preserved. The shared 172-check template retains its CARSOME provenance. It is not the Carro 160-point report, and no seller inspection outcomes are imported.

@@ -5,7 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { PARTS } from '../src/checklist.ts';
 import { preparePartLayout, partCell, transitionPose } from '../src/model-layout.ts';
-const bytes=await fs.readFile(new URL('../public/models/subaru-xv-inspection.glb',import.meta.url));
+const bytes=await fs.readFile(new URL('../public/models/'+(process.argv.includes('--bmw')?'bmw-330i':'subaru-xv')+'-inspection.glb',import.meta.url));
 const gltf=await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parseAsync(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),'');
 const roots=PARTS.map(p=>{const g=gltf.scene.getObjectByName(`part-${p.id}`) as THREE.Group;assert.ok(g,`Missing ${p.id}`);assert.equal(g.userData.partId,p.id);assert.ok(g.children.length);preparePartLayout(g,p,true);return g;});
 let triangles=0;gltf.scene.traverse(o=>{if(o instanceof THREE.Mesh){assert.ok(o.geometry.getAttribute('position').count>0);triangles+=(o.geometry.index?.count??o.geometry.getAttribute('position').count)/3;}});

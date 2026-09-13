@@ -1,3 +1,4 @@
+import { vehicleById } from './vehicles';
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -76,7 +77,7 @@ export default function CarScene(props:Props){
   let groups=PARTS.map(makePart);groups.forEach(g=>scene.add(g));
   let disposed=false,blenderLoaded=false;
   groups.forEach((g,i)=>preparePartLayout(g,PARTS[i]));
-  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load('/models/subaru-xv-inspection.glb',gltf=>{
+  new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).load(vehicleById(props.record.vehicleId).model,gltf=>{
    if(disposed){gltf.scene.traverse(o=>{if(o instanceof THREE.Mesh){o.geometry.dispose();}});return;}
    const imported=PARTS.map(part=>gltf.scene.getObjectByName(`part-${part.id}`));
    if(imported.some(p=>!p)){setModelState('Model component mapping failed · basic geometry');return;}
@@ -85,7 +86,7 @@ export default function CarScene(props:Props){
    blenderLoaded=true;settle=1;setModelState('');
   },undefined,()=>{if(!disposed)setModelState('Detailed model unavailable · basic geometry');});
   const base=new THREE.Mesh(new RoundedBoxGeometry(1.86,.35,3.82,3,.2),material('#c2cdca',.2,.42));base.position.set(0,.59,0);base.castShadow=true;scene.add(base);
-  let width=600,height=500,raf=0,amount=0,previousTarget=0,settle=1,reset=props.reset,previousSelection=props.selected,previousIsolation=props.isolated;
+  let width=600,height=500,raf=0,amount=0,previousTarget=0,settle=1,reset=props.reset,previousSelection=props.selected,previousIsolation=props.isolated,previousView=props.view;
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const orbitPosition=camera.position.clone(),orbitTarget=controls.target.clone();
   const resize=()=>{if(!container.clientWidth||!container.clientHeight)return;width=container.clientWidth;height=container.clientHeight;renderer.setSize(width,height);settle=1;};
@@ -109,12 +110,13 @@ export default function CarScene(props:Props){
     settle=1;previousTarget=target;
    }
    if(reset!==p.reset){reset=p.reset;orbitPosition.set(6,4.2,-7);orbitTarget.set(0,.85,0);settle=1;}
+   if(previousView!==p.view){previousView=p.view;settle=1;}
    if(previousIsolation!==p.isolated||previousSelection!==p.selected){previousIsolation=p.isolated;previousSelection=p.selected;settle=1;}
    const speed=reduced?1:1-Math.exp(-dt*10);
    amount=THREE.MathUtils.lerp(amount,target,speed);if(Math.abs(amount-target)<.0002)amount=target;
    settle=Math.max(0,settle-dt);
    const {spread,pack}=explodePhases(amount),packed=amount>=.94;
-   const visibleParts=PARTS.filter(part=>!p.isolated||part.id===p.selected);
+   const visibleParts=PARTS.filter(part=>(p.view==='Interior'?part.view==='Interior':target===0||part.view==='Exterior')&&(!p.isolated||part.id===p.selected));
    const cols=p.isolated?1:width<550?4:6,rows=Math.ceil(visibleParts.length/cols),aspect=width/height;
    allBounds.makeEmpty();
    groups.forEach((g,i)=>{
@@ -144,12 +146,12 @@ export default function CarScene(props:Props){
     camera.top=THREE.MathUtils.lerp(camera.top,half,speed);camera.zoom=THREE.MathUtils.lerp(camera.zoom,1,speed);
    }
    camera.bottom=-camera.top;camera.right=camera.top*aspect;camera.left=-camera.right;
-   controls.enabled=true;controls.enableRotate=!packed;controls.enablePan=packed;controls.screenSpacePanning=true;controls.maxPolarAngle=Math.PI;
+   controls.enabled=!p.preview;controls.enableRotate=!packed;controls.enablePan=packed;controls.screenSpacePanning=true;controls.maxPolarAngle=Math.PI;
    controls.mouseButtons.LEFT=packed?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;
    controls.touches.ONE=packed?THREE.TOUCH.PAN:THREE.TOUCH.ROTATE;
    controls.touches.TWO=packed?THREE.TOUCH.DOLLY_PAN:THREE.TOUCH.DOLLY_ROTATE;
    controls.update();camera.updateProjectionMatrix();
-   floor.visible=amount<.5;grid.visible=amount<.15;base.visible=!blenderLoaded&&amount<.01&&!p.isolated;
+   floor.visible=amount<.5;grid.visible=amount<.15;base.visible=p.view==='Exterior'&&!blenderLoaded&&amount<.01&&!p.isolated;
    groups.forEach((g,i)=>{
     const part=PARTS[i],label=labels.current[part.id];if(!label)return;
     const selected=p.selected===part.id,status=partStatus(p.record,part.id);
@@ -159,6 +161,7 @@ export default function CarScene(props:Props){
     temp.project(camera);label.style.left=((temp.x*.5+.5)*width)+'px';label.style.top=((-temp.y*.5+.5)*height)+'px';
    });
    container.dataset.layoutReady=settle===0&&amount===target?'true':'false';
+   container.dataset.view=p.view;container.dataset.visibleParts=visibleParts.map(part=>part.id).join(',');
    container.dataset.layoutMode=amount===0?'assembled':amount<=.45?'spread':'packed';
    container.dataset.expansion=amount.toFixed(3);container.dataset.gesture=packed?'pan':'rotate';
    container.dataset.cameraTarget=controls.target.toArray().map(n=>n.toFixed(3)).join(',');
@@ -171,7 +174,8 @@ export default function CarScene(props:Props){
  const amount=props.expansion??(props.exploded?1:0);
  return <div ref={host} className={'car-scene '+(amount>.94?'flat ':'')+(props.preview?'preview':'')} role="group" aria-label="Interactive vehicle and parts">
   {modelState&&<div className="model-load-state" role="status">{modelState}</div>}
-  {!failed&&PARTS.map(p=><button key={p.id} ref={el=>{labels.current[p.id]=el;}} onClick={()=>props.onSelect(p.id)} className={`part-pin ${partStatus(props.record,p.id)} ${props.selected===p.id?'selected':''}`} title={`${p.name} · ${PART_STATUS[partStatus(props.record,p.id)]}`} aria-label={`${p.name}: ${PART_STATUS[partStatus(props.record,p.id)]}`}><span>{MARKS[partStatus(props.record,p.id)]}</span><b>{p.name}</b></button>)}
-  {failed&&<div className="scene-fallback"><p>3D graphics unavailable. Select a component to continue inspecting.</p>{PARTS.filter(p=>p.view===props.view).map(p=><button key={p.id} onClick={()=>props.onSelect(p.id)}>{p.name} · {PART_STATUS[partStatus(props.record,p.id)]}</button>)}</div>}
+  {!failed&&!props.preview&&PARTS.map(p=><button key={p.id} ref={el=>{labels.current[p.id]=el;}} onClick={()=>props.onSelect(p.id)} className={`part-pin ${partStatus(props.record,p.id)} ${props.selected===p.id?'selected':''}`} title={`${p.name} · ${PART_STATUS[partStatus(props.record,p.id)]}`} aria-label={`${p.name}: ${PART_STATUS[partStatus(props.record,p.id)]}`}><span>{MARKS[partStatus(props.record,p.id)]}</span><b>{p.name}</b></button>)}
+  {failed&&props.preview&&<img src={vehicleById(props.record.vehicleId).image} alt={vehicleById(props.record.vehicleId).name}/>}
+  {failed&&!props.preview&&<div className="scene-fallback"><p>3D graphics unavailable. Select a component to continue inspecting.</p>{PARTS.filter(p=>p.view===props.view).map(p=><button key={p.id} onClick={()=>props.onSelect(p.id)}>{p.name} · {PART_STATUS[partStatus(props.record,p.id)]}</button>)}</div>}
  </div>;
 }

@@ -4,7 +4,7 @@ import { CHECKS, SECTIONS, checkById } from './checklist';
 import { completeness, grade, statusOf, exportHtml, type RecordData, type Mutation } from './domain';
 export function downloadReport(record:RecordData){
  const url=URL.createObjectURL(new Blob([exportHtml(record)],{type:'text/html;charset=utf-8'}));
- const a=document.createElement('a');a.href=url;a.download='inspection-subaru-xv-'+record.id.slice(0,8)+'.html';
+ const a=document.createElement('a');a.href=url;a.download='inspection-'+record.vehicleId+'-'+record.id.slice(0,8)+'.html';
  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 export default function Review({record,onClose,onSelect,onMutate,saved}:{record:RecordData;onClose:()=>void;onSelect:(id:string)=>void;onMutate:(a:Mutation)=>void;saved:boolean}){

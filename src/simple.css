@@ -120,3 +120,11 @@
 .simple-toolbar{margin-bottom:16px}
 .simple-app .simple-stage .car-scene{height:clamp(250px,calc(100svh - 515px),650px)}
 @media(max-width:600px){.vehicle-choice .car-scene.preview{height:240px}.simple-app .simple-stage .car-scene{height:clamp(235px,calc(100svh - 515px),500px)}}
+
+/* Let full vehicle names wrap without crowding the header controls. */
+.simple-header{height:auto;min-height:96px;padding-top:16px;padding-bottom:16px}
+.simple-vehicle-title{min-width:0}
+.simple-header h1{line-height:1.2;overflow-wrap:anywhere}
+.simple-header h1 small{display:inline-block}
+.simple-header-actions,.simple-header .vehicle-back{flex-shrink:0}
+@media(max-width:600px){.simple-header{min-height:82px}.simple-header h1{font-size:18px}}

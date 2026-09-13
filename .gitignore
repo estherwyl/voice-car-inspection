@@ -1,5 +1,6 @@
 node_modules/
 .vite/
+.sites-deployments/
 dist/
 *.tsbuildinfo
 .env*

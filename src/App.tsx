@@ -1,3 +1,4 @@
+import { VEHICLES, vehicleById } from './vehicles';
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Camera, RotateCcw, Check, LoaderCircle, AlertCircle, X, ClipboardList, MoreHorizontal, Info, History, LayoutGrid, Car, Focus, ArrowLeft, ArrowRight } from 'lucide-react';
 import CarScene from './CarScene';
@@ -5,7 +6,7 @@ import BrandHeader from './BrandHeader';
 import DetailPanel, { EvidenceViewer } from './DetailPanel';
 import CameraModal from './CameraModal';
 import Review from './Review';
-import { CHECKS, SECTIONS, SOURCE_URL, checkById, partById, type Section } from './checklist';
+import { CHECKS, SECTIONS, checkById, partById, type Section } from './checklist';
 import { completeness, grade, freshRecord, mutate, statusOf, STATUS, type RecordData, type Mutation, type Photo } from './domain';
 import { converse, normalizeSpeech, type ConversationContext } from './conversation';
 import { browserVoiceAdapter, VoiceSession, type VoiceState } from './voice-session';
@@ -16,6 +17,8 @@ import './simple.css';
 export default function App(){
  const [record,setRecord]=useState<RecordData|null>(null),recordRef=useRef<RecordData|null>(null);
  const [loadError,setLoadError]=useState(''),[save,setSave]=useState<'saving'|'saved'|'failed'>('saved'),saveQueue=useRef(Promise.resolve());
+ const [switching,setSwitching]=useState(false);
+ async function selectVehicle(id:string){if(switching)return;setSwitching(true);session.current?.stop();try{await saveQueue.current;if(recordRef.current)await saveRecord(recordRef.current);const next=await loadRecord(id)??freshRecord(id);commit(next);conversation.current={partId:''};setSelected('');setView('Exterior');setExpansion(0);setIsolated(false);setPanel(null);setMenu(false);setReview(false);setCamera(null);setPhoto(null);setReply('');setInterim('');setVoiceError('');setPage('inspection');}catch(e){setLoadError(String(e));}finally{setSwitching(false);}}
  const [page,setPage]=useState<'vehicles'|'inspection'>('vehicles');
  const [selected,setSelected]=useState(''),[checkId,setCheckId]=useState('left-front-door');
  const [view,setView]=useState<'Exterior'|'Interior'>('Exterior'),[expansion,setExpansion]=useState(0),[isolated,setIsolated]=useState(false),[reset,setReset]=useState(0);
@@ -98,7 +101,7 @@ export default function App(){
   const adapter=browserVoiceAdapter();
   // Browser adapter is retained only for the isolated deterministic UI test harness.
   if(!location.pathname.startsWith('/tests/')){
-   const voice=new RealtimeVoice({onState:(state,on)=>{setVoiceState(state);setActive(on);},onInterim:setInterim,onError:setVoiceError,onReply:setReply,command:text=>processRef.current(text),context:()=>{const r=recordRef.current;return r?{completeness:completeness(r),grade:grade(r),checks:CHECKS.map(c=>({id:c.id,name:c.name,status:statusOf(r,c.id)})),findings:r.findings,photos:r.photos.map(p=>({id:p.id,checkId:p.checkId,findingId:p.findingId})),cameraOpen:!!cameraRef.current}:{};}});
+   const voice=new RealtimeVoice({onState:(state,on)=>{setVoiceState(state);setActive(on);},onInterim:setInterim,onError:setVoiceError,onReply:setReply,command:text=>processRef.current(text),context:()=>{const r=recordRef.current;return r?{vehicle:vehicleById(r.vehicleId),completeness:completeness(r),grade:grade(r),checks:CHECKS.map(c=>({id:c.id,name:c.name,status:statusOf(r,c.id)})),findings:r.findings,photos:r.photos.map(p=>({id:p.id,checkId:p.checkId,findingId:p.findingId})),cameraOpen:!!cameraRef.current}:{};}});
    session.current=voice;return()=>{voice.dispose();session.current=null;};
   }
   if(!adapter)return;
@@ -120,20 +123,22 @@ export default function App(){
  }
  if(loadError)return <div className="load-screen"><AlertCircle/><h1>Inspection could not load</h1><p>{loadError}</p><button onClick={()=>location.reload()}>Retry</button></div>;
  if(!record)return <div className="load-screen"><LoaderCircle className="spin"/></div>;
+ const vehicle=vehicleById(record.vehicleId);
  const complete=completeness(record),issues=record.findings.filter(f=>!f.resolved).length;
  const rows=CHECKS.filter(c=>(section==='All'||c.section===section)&&(filter==='all'||filter==='unchecked'&&statusOf(record,c.id)==='not-inspected'||filter==='issues'&&statusOf(record,c.id)==='to-be-rectified'||filter==='observed'&&statusOf(record,c.id)!=='not-inspected'));
  const label=voiceState==='listening'?'Listening':voiceState==='speaking'?'Companion speaking':voiceState==='thinking'?'Updating':voiceState==='connecting'?'Connecting':voiceState==='error'?'Tap to retry':reply?'Tap to continue':'Tap to inspect';
- if(page==='vehicles')return <div className="vehicle-landing"><BrandHeader/><main><h2>Select a vehicle</h2><button className="vehicle-choice" onClick={()=>setPage('inspection')} aria-label="Select 2022 Subaru XV GT Edition"><img src="/models/subaru-xv-studio.png" alt="White Subaru XV reference model"/><span className="vehicle-choice-info"><span><small>2022 · GT Edition</small><strong>Subaru XV</strong></span><span className="vehicle-choice-action">{record.started?'Resume':'Inspect'}<ArrowRight size={18}/></span></span></button></main></div>;
+ if(page==='vehicles')return <div className="vehicle-landing"><BrandHeader/><main><h2>Select a vehicle</h2><div className="vehicle-grid">{VEHICLES.map(v=><button key={v.id} className="vehicle-choice" disabled={switching} onClick={()=>void selectVehicle(v.id)} aria-label={`Select ${v.year} ${v.name} ${v.variant}`}><CarScene record={freshRecord(v.id)} selected="" onSelect={()=>{}} view="Exterior" exploded={false} expansion={0} isolated={false} reset={0} preview minimal/><span className="vehicle-choice-info"><span><small>{v.year} · {v.variant}</small><strong>{v.name}</strong></span><span className="vehicle-choice-action">{record.vehicleId===v.id&&record.started?'Resume':'Inspect'}<ArrowRight size={18}/></span></span></button>)}</div></main></div>;
  return <div className="simple-app">
-  <header className="simple-header"><button className="icon-button vehicle-back" aria-label="Choose vehicle" onClick={()=>{session.current?.stop();setPage('vehicles');}}><ArrowLeft size={19}/></button><div><span className="simple-brand">JARVICI</span><h1>Subaru XV <small>2022</small></h1></div><div className="simple-header-actions">
+  <header className="simple-header"><button className="icon-button vehicle-back" aria-label="Choose vehicle" onClick={()=>{session.current?.stop();setPage('vehicles');}}><ArrowLeft size={19}/></button><div><span className="simple-brand">JARVICI</span><h1>{vehicle.name} <small>{vehicle.year}</small></h1></div><div className="simple-header-actions">
    <span className={'simple-save '+save} title={save==='saved'?'Saved in this browser':save==='saving'?'Saving':'Save failed'} aria-label={save==='saved'?'Saved locally':save==='saving'?'Saving locally':'Save failed'} role="status">{save==='saving'?<LoaderCircle size={15} className="spin"/>:save==='saved'?<Check size={15}/>:<AlertCircle size={15}/>}</span>
    <button className="report-open" aria-label={'Report '+complete.done+'/'+complete.total} onClick={()=>setPanel('report')}><ClipboardList size={17}/><span>Report</span><b>{complete.done}/{complete.total}</b></button>
    <div className="simple-menu"><button className="icon-button" aria-label="More options" onClick={()=>setMenu(!menu)}><MoreHorizontal size={22}/></button>{menu&&<div className="menu-popover"><button onClick={()=>{setMenu(false);setPanel('history');}}><History size={16}/>History</button><button onClick={()=>{setMenu(false);setPanel('about');}}><Info size={16}/>About</button></div>}</div>
   </div></header>
   {save==='failed'&&<div className="simple-error" role="alert">Not saved. <button onClick={()=>commit({...record})}>Retry</button><button onClick={()=>setReview(true)}>Export backup</button></div>}
   <main className="simple-workspace">
+   <div className="simple-toolbar"><div className="segmented" role="tablist" aria-label="Vehicle view">{(['Exterior','Interior'] as const).map(tab=><button key={tab} id={`view-${tab.toLowerCase()}`} role="tab" aria-selected={view===tab} aria-controls="vehicle-view" className={view===tab?'active':''} onClick={()=>{setView(tab);setSelected('');setIsolated(false);setReset(n=>n+1);}}>{tab}</button>)}</div></div>
    <div className="explode-control"><label htmlFor="explode-slider">Assembled <span>{Math.round(expansion*100)}%</span> Parts</label><input id="explode-slider" aria-label="Explode vehicle" type="range" min="0" max="100" step="1" value={Math.round(expansion*100)} onChange={e=>{setExpansion(Number(e.target.value)/100);setIsolated(false);}}/><small>{expansion>=.94?'Drag to pan · Pinch to zoom':'Drag to rotate'}</small></div>
-   <section className={'simple-stage '+(expansion>=.94?'is-packed':'')}><CarScene record={record} selected={selected} onSelect={choosePart} view={view} exploded={expansion===1} expansion={expansion} isolated={isolated} reset={reset} minimal/><button className="stage-reset icon-button" aria-label="Reset vehicle view" onClick={()=>{setExpansion(0);setIsolated(false);setReset(v=>v+1);}}><RotateCcw size={16}/></button>{selected&&<button className="stage-isolate icon-button" aria-label={isolated?'Show all parts':'Isolate selected part'} onClick={()=>setIsolated(!isolated)}><Focus size={17}/></button>}</section>
+   <section id="vehicle-view" role="tabpanel" aria-labelledby={`view-${view.toLowerCase()}`} className={'simple-stage '+(expansion>=.94?'is-packed':'')}><CarScene key={record.vehicleId} record={record} selected={selected} onSelect={choosePart} view={view} exploded={expansion===1} expansion={expansion} isolated={isolated} reset={reset} minimal/><button className="stage-reset icon-button" aria-label="Reset vehicle view" onClick={()=>{setExpansion(0);setIsolated(false);setReset(v=>v+1);}}><RotateCcw size={16}/></button>{selected&&<button className="stage-isolate icon-button" aria-label={isolated?'Show all parts':'Isolate selected part'} onClick={()=>setIsolated(!isolated)}><Focus size={17}/></button>}</section>
    <div className="simple-progress"><div className="progress"><i style={{width:complete.percent+'%'}}/></div><button onClick={()=>setPanel('report')}>{complete.done} checked <span>·</span> {issues} {issues===1?'issue':'issues'}</button></div>
   </main>
   <section className={'voice-control '+voiceState} aria-label="Voice companion">
@@ -152,7 +157,7 @@ export default function App(){
     <details><summary>Voice commands</summary><p>“Left front door is okay.”<br/>“Right rear door has a scratch.”<br/>“Minor.”<br/>“Actually, that was the left rear door.”<br/>“What is left?”<br/>“Open camera.”<br/>“Capture.” · “Save photo.”<br/>“Undo.” · “Review the report.”</p></details>
     <details><summary>What gets checked?</summary><p>A named door means its exterior panel. Window controls and trim are separate checks. The companion asks verbally when a part or result is unclear. Left and right are vehicle-relative.</p></details>
     <details><summary>Voice & storage</summary><p>GPT-Live-1 powers voice, with a delegated backend handling inspection tool calls. Audio and inspection context are sent to OpenAI while connected. The API key stays on the local server. Notes and photos save in this browser; use one tab per inspection.</p><p>Keep the app open while inspecting. Microphone permission and an internet connection are required.</p></details>
-    <details><summary>Model & checklist</summary><p>2022 Subaru XV GT Edition. Detailed Blender reference geometry is approximate. 165 source rows plus 7 overview/guidance checks; all begin unchecked. Grading is illustrative.</p><a href={SOURCE_URL} target="_blank" rel="noreferrer">Source report</a></details>
+    <details><summary>Model & checklist</summary><p>{vehicle.year} {vehicle.name} {vehicle.variant}. Detailed Blender reference geometry is approximate. Shared inspection template: 165 CARSOME source rows plus 7 overview/guidance checks; all begin unchecked. BMW listing outcomes are not imported. Grading is illustrative.</p><a href={vehicle.sourceUrl} target="_blank" rel="noreferrer">Source report</a></details>
    </div>}
   </section></div>}
   {review&&<Review record={record} onClose={()=>setReview(false)} onSelect={id=>focusCheck(id,true)} onMutate={apply} saved={save==='saved'}/>}

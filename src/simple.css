@@ -112,3 +112,11 @@
 @keyframes identity-arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){.vehicle-landing>.jarvici-header{margin:0 -24px 28px;padding:30px 24px 16px}.jarvici-identity{gap:18px}.jarvici-core{width:78px;height:78px}.vehicle-landing .landing-brand{font-size:clamp(28px,7.7vw,44px);letter-spacing:.1em}.vehicle-landing .landing-brand .brand-expansion{font-size:11px;letter-spacing:.015em;margin-top:10px}.brand-break{display:block}.jarvici-trace{margin-top:20px}.vehicle-landing main>h2{font-size:22px}}
 @media(prefers-reduced-motion:reduce){.core-orbit,.jarvici-identity{animation:none}}
+
+.vehicle-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.vehicle-grid .vehicle-choice{width:100%}.vehicle-choice:disabled{opacity:.65;cursor:wait}@media(max-width:650px){.vehicle-grid{grid-template-columns:1fr}}
+
+/* Share the inspection scene and lighting with the vehicle cards. */
+.vehicle-choice .car-scene.preview{width:100%;height:280px;background:#f6f8f5;pointer-events:none;flex-shrink:0}
+.simple-toolbar{margin-bottom:16px}
+.simple-app .simple-stage .car-scene{height:clamp(250px,calc(100svh - 515px),650px)}
+@media(max-width:600px){.vehicle-choice .car-scene.preview{height:240px}.simple-app .simple-stage .car-scene{height:clamp(235px,calc(100svh - 515px),500px)}}

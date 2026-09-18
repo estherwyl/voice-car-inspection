@@ -6,7 +6,7 @@ import BrandHeader from './BrandHeader';
 import DetailPanel, { EvidenceViewer } from './DetailPanel';
 import CameraModal from './CameraModal';
 import Review from './Review';
-import { CHECKS, SECTIONS, checkById, partById, type Section } from './checklist';
+import { CHECKS, SECTIONS, checkById, partById } from './checklist';
 import { completeness, grade, freshRecord, mutate, statusOf, STATUS, type RecordData, type Mutation, type Photo } from './domain';
 import { converse, normalizeSpeech, type ConversationContext } from './conversation';
 import { browserVoiceAdapter, VoiceSession, type VoiceState } from './voice-session';
@@ -23,7 +23,7 @@ export default function App(){
  const [selected,setSelected]=useState(''),[checkId,setCheckId]=useState('left-front-door');
  const [view,setView]=useState<'Exterior'|'Interior'>('Exterior'),[expansion,setExpansion]=useState(0),[isolated,setIsolated]=useState(false),[reset,setReset]=useState(0);
  const [panel,setPanel]=useState<'report'|'detail'|'history'|'about'|null>(null),[menu,setMenu]=useState(false),[review,setReview]=useState(false);
- const [filter,setFilter]=useState('observed'),[section,setSection]=useState<Section|'All'>('All'),[detailTab,setDetailTab]=useState<'checks'|'findings'|'photos'>('checks');
+ const [filter,setFilter]=useState('observed'),[reportMode,setReportMode]=useState<'defects'|'checklist'>('defects'),[detailTab,setDetailTab]=useState<'checks'|'findings'|'photos'>('checks');
  const [camera,setCamera]=useState<{checkId:string;findingId?:string}|null>(null),cameraRef=useRef<typeof camera>(null);
  const [cameraAction,setCameraAction]=useState<{id:number;action:'capture'|'save'|'retake'}>({id:0,action:'capture'});
  const [photo,setPhoto]=useState<Photo|null>(null),[toast,setToast]=useState('');
@@ -50,6 +50,12 @@ export default function App(){
   const r=recordRef.current;if(!r)return;
   const id=checkId,findings=r.findings.filter(f=>f.checkId===id);
   setCamera({checkId:id,findingId:findingId??(findings.length===1?findings[0].id:undefined)});
+ }
+ function openReport(){
+  const hasDefects=recordRef.current?.findings.some(f=>!f.resolved)??false;
+  setReportMode(hasDefects?'defects':'checklist');
+  if(!hasDefects)setFilter('all');
+  setPanel('report');
  }
  function process(text:string):string {
   const r=recordRef.current;if(!r)return 'Please wait for your inspection to load.';
@@ -83,7 +89,7 @@ export default function App(){
     }
     case 'capture':message='Say open camera first.';break;
     case 'review':setReview(true);message='Your report is ready to review.';break;
-    case 'outstanding':setFilter('unchecked');setSection('All');setPanel('report');break;
+    case 'outstanding':setReportMode('checklist');setFilter('unchecked');setPanel('report');break;
    }
   }
   setReply(message);return message;
@@ -124,14 +130,16 @@ export default function App(){
  if(loadError)return <div className="load-screen"><AlertCircle/><h1>Inspection could not load</h1><p>{loadError}</p><button onClick={()=>location.reload()}>Retry</button></div>;
  if(!record)return <div className="load-screen"><LoaderCircle className="spin"/></div>;
  const vehicle=vehicleById(record.vehicleId);
- const complete=completeness(record),issues=record.findings.filter(f=>!f.resolved).length;
- const rows=CHECKS.filter(c=>(section==='All'||c.section===section)&&(filter==='all'||filter==='unchecked'&&statusOf(record,c.id)==='not-inspected'||filter==='issues'&&statusOf(record,c.id)==='to-be-rectified'||filter==='observed'&&statusOf(record,c.id)!=='not-inspected'));
+ const complete=completeness(record),openFindings=record.findings.filter(f=>!f.resolved),issues=openFindings.length;
+ const missingEvidence=openFindings.filter(f=>!record.photos.some(p=>p.findingId===f.id)).length;
+ const rows=CHECKS.filter(c=>filter==='all'||filter==='unchecked'&&statusOf(record,c.id)==='not-inspected'||filter==='observed'&&statusOf(record,c.id)!=='not-inspected');
+ const reportSections=SECTIONS.map(name=>({name,findings:openFindings.filter(f=>checkById(f.checkId).section===name),rows:rows.filter(c=>c.section===name),checks:CHECKS.filter(c=>c.section===name)}));
  const label=voiceState==='listening'?'Listening':voiceState==='speaking'?'Companion speaking':voiceState==='thinking'?'Updating':voiceState==='connecting'?'Connecting':voiceState==='error'?'Tap to retry':reply?'Tap to continue':'Tap to inspect';
  if(page==='vehicles')return <div className="vehicle-landing"><BrandHeader/><main><h2>Select a vehicle</h2><div className="vehicle-grid">{VEHICLES.map(v=><button key={v.id} className="vehicle-choice" disabled={switching} onClick={()=>void selectVehicle(v.id)} aria-label={`Select ${v.year} ${v.name} ${v.variant}`}><CarScene record={freshRecord(v.id)} selected="" onSelect={()=>{}} view="Exterior" exploded={false} expansion={0} isolated={false} reset={0} preview minimal/><span className="vehicle-choice-info"><span><small>{v.year} · {v.variant}</small><strong>{v.name}</strong></span><span className="vehicle-choice-action">{record.vehicleId===v.id&&record.started?'Resume':'Inspect'}<ArrowRight size={18}/></span></span></button>)}</div></main></div>;
  return <div className="simple-app">
   <header className="simple-header"><button className="icon-button vehicle-back" aria-label="Choose vehicle" onClick={()=>{session.current?.stop();setPage('vehicles');}}><ArrowLeft size={19}/></button><div className="simple-vehicle-title"><span className="simple-brand">JARVICI</span><h1>{vehicle.inspectionName} <small>{vehicle.year}</small></h1></div><div className="simple-header-actions">
    <span className={'simple-save '+save} title={save==='saved'?'Saved in this browser':save==='saving'?'Saving':'Save failed'} aria-label={save==='saved'?'Saved locally':save==='saving'?'Saving locally':'Save failed'} role="status">{save==='saving'?<LoaderCircle size={15} className="spin"/>:save==='saved'?<Check size={15}/>:<AlertCircle size={15}/>}</span>
-   <button className="report-open" aria-label={'Report '+complete.done+'/'+complete.total} onClick={()=>setPanel('report')}><ClipboardList size={17}/><span>Report</span><b>{complete.done}/{complete.total}</b></button>
+   <button className="report-open" aria-label={'Report '+complete.done+'/'+complete.total} onClick={openReport}><ClipboardList size={17}/><span>Report</span><b>{complete.done}/{complete.total}</b></button>
    <div className="simple-menu"><button className="icon-button" aria-label="More options" onClick={()=>setMenu(!menu)}><MoreHorizontal size={22}/></button>{menu&&<div className="menu-popover"><button onClick={()=>{setMenu(false);setPanel('history');}}><History size={16}/>History</button><button onClick={()=>{setMenu(false);setPanel('about');}}><Info size={16}/>About</button></div>}</div>
   </div></header>
   {save==='failed'&&<div className="simple-error" role="alert">Not saved. <button onClick={()=>commit({...record})}>Retry</button><button onClick={()=>setReview(true)}>Export backup</button></div>}
@@ -139,7 +147,7 @@ export default function App(){
    <div className="simple-toolbar"><div className="segmented" role="tablist" aria-label="Vehicle view">{(['Exterior','Interior'] as const).map(tab=><button key={tab} id={`view-${tab.toLowerCase()}`} role="tab" aria-selected={view===tab} aria-controls="vehicle-view" className={view===tab?'active':''} onClick={()=>{setView(tab);setSelected('');setIsolated(false);setReset(n=>n+1);}}>{tab}</button>)}</div></div>
    <div className="explode-control"><label htmlFor="explode-slider">Assembled <span>{Math.round(expansion*100)}%</span> Parts</label><input id="explode-slider" aria-label="Explode vehicle" type="range" min="0" max="100" step="1" value={Math.round(expansion*100)} onChange={e=>{setExpansion(Number(e.target.value)/100);setIsolated(false);}}/><small>{expansion>=.94?'Drag to pan · Pinch to zoom':'Drag to rotate'}</small></div>
    <section id="vehicle-view" role="tabpanel" aria-labelledby={`view-${view.toLowerCase()}`} className={'simple-stage '+(expansion>=.94?'is-packed':'')}><CarScene key={record.vehicleId} record={record} selected={selected} onSelect={choosePart} view={view} exploded={expansion===1} expansion={expansion} isolated={isolated} reset={reset} minimal/><button className="stage-reset icon-button" aria-label="Reset vehicle view" onClick={()=>{setExpansion(0);setIsolated(false);setReset(v=>v+1);}}><RotateCcw size={16}/></button>{selected&&<button className="stage-isolate icon-button" aria-label={isolated?'Show all parts':'Isolate selected part'} onClick={()=>setIsolated(!isolated)}><Focus size={17}/></button>}</section>
-   <div className="simple-progress"><div className="progress"><i style={{width:complete.percent+'%'}}/></div><button onClick={()=>setPanel('report')}>{complete.done} checked <span>·</span> {issues} {issues===1?'issue':'issues'}</button></div>
+   <div className="simple-progress"><div className="progress"><i style={{width:complete.percent+'%'}}/></div><button onClick={openReport}>{complete.done} checked <span>·</span> {issues} {issues===1?'issue':'issues'}</button></div>
   </main>
   <section className={'voice-control '+voiceState} aria-label="Voice companion">
    <div className="voice-feedback" aria-live="polite">{interim?<p className="interim">“{interim}”</p>:reply?<p>{reply}</p>:<p className="voice-example">“Left front door is okay.”</p>}</div>
@@ -148,9 +156,20 @@ export default function App(){
     <button className="voice-utility" aria-label="Undo last change" disabled={!record.undo.length} onClick={()=>{apply({type:'undo'});setReply('Last change undone.');}}><RotateCcw size={22}/></button></div>
    <b className="voice-state-label">{label}</b>{voiceError&&<p className="simple-voice-error" role="alert">{voiceError}{voiceError==='Sign in to use voice inspection.'&&<> <a href="/signin-with-chatgpt?return_to=%2F" target="_top">Sign in with ChatGPT</a></>}</p>}<small className="voice-engine">GPT-Live-1 · automatic annotation</small>
   </section>
-  {panel&&<div className="simple-backdrop" onClick={()=>setPanel(null)}><section className={'simple-sheet '+(panel==='detail'?'details-sheet':'')} role="dialog" aria-modal="true" aria-label={panel==='report'?'Inspection report':panel==='detail'?'Component details':panel==='history'?'Edit history':'About voice inspection'} onClick={e=>e.stopPropagation()}>
+  {panel&&<div className="simple-backdrop" onClick={()=>setPanel(null)}><section className={'simple-sheet '+(panel==='report'?'report-sheet':panel==='detail'?'details-sheet':'')} role="dialog" aria-modal="true" aria-label={panel==='report'?'Inspection report':panel==='detail'?'Component details':panel==='history'?'Edit history':'About voice inspection'} onClick={e=>e.stopPropagation()}>
    <header className="sheet-header"><h2>{panel==='report'?'Report':panel==='detail'?'Component':panel==='history'?'History':'About'}</h2><button className="icon-button" onClick={()=>setPanel(null)} aria-label="Close panel"><X size={21}/></button></header>
-   {panel==='report'&&<><div className="sheet-summary"><strong>{complete.done}<small> / {complete.total}</small></strong><span>checks</span><b>{issues} {issues===1?'issue':'issues'}</b></div><div className="simple-filters">{[['observed','Checked'],['issues','Issues'],['unchecked','Unchecked'],['all','All']].map(([id,name])=><button key={id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{name}</button>)}</div><select className="section-select" aria-label="Report section" value={section} onChange={e=>setSection(e.target.value as Section|'All')}><option>All</option>{SECTIONS.map(s=><option key={s}>{s}</option>)}</select><div className="simple-report-rows">{rows.length===0&&<p className="simple-empty">{filter==='issues'?'No issues recorded.':'No checks yet. Start talking.'}</p>}{rows.map(c=>{const status=statusOf(record,c.id),fs=record.findings.filter(f=>f.checkId===c.id);return <button key={c.id} data-check-id={c.id} onClick={()=>focusCheck(c.id,true)}><span className={'status-dot '+status}>{status==='not-inspected'?'?':status==='to-be-rectified'?'!':status==='not-applicable'?'−':'✓'}</span><span><b>{c.name}</b><small>{fs.length?fs.map(f=>f.type+' · '+f.severity).join(', '):STATUS[status]}</small></span>{record.photos.some(p=>p.checkId===c.id)&&<Camera size={16}/>}</button>;})}</div><footer className="sheet-footer"><button className="primary" onClick={()=>{setPanel(null);setReview(true);}}>Review & export</button></footer></>}
+   {panel==='report'&&<>
+    <div className="report-progress-summary"><div><span>Inspection progress</span><strong>{complete.done}<small> / {complete.total}</small></strong><p>{complete.remaining} items remaining</p></div><div className="report-alert-count"><span>Open defects</span><strong>{issues}</strong><p>{missingEvidence} {missingEvidence===1?'photo':'photos'} missing</p></div></div>
+    <div className="report-mode-tabs" role="tablist" aria-label="Report view"><button role="tab" aria-selected={reportMode==='defects'} className={reportMode==='defects'?'active':''} onClick={()=>setReportMode('defects')}>Defects <span>{issues}</span></button><button role="tab" aria-selected={reportMode==='checklist'} className={reportMode==='checklist'?'active':''} onClick={()=>{setReportMode('checklist');setFilter('all');}}>Full</button></div>
+    {reportMode==='defects'?<section className="defect-ledger" aria-label="Defects requiring attention">
+     <div className="report-section-heading"><div><h3>Defects requiring attention</h3><p>Review the observation and evidence before moving on.</p></div></div>
+     {openFindings.length===0?<div className="report-clear-state"><Check size={22}/><div><b>No open defects</b><p>Flagged observations will appear here with their evidence.</p></div></div>:reportSections.filter(group=>group.findings.length).map(group=><section className="report-category" key={group.name} aria-label={`${group.name} defects`}><header><h4>{group.name}</h4><span>{group.findings.length} {group.findings.length===1?'defect':'defects'}</span></header>{group.findings.map(f=>{const check=checkById(f.checkId),photos=record.photos.filter(p=>p.findingId===f.id),firstPhoto=photos[0];return <article className={'defect-record severity-'+f.severity} key={f.id}><div className="defect-evidence">{firstPhoto?<button aria-label={`View evidence for ${check.name}`} onClick={()=>setPhoto(firstPhoto)}><img src={firstPhoto.data} alt={firstPhoto.name}/><span>{photos.length} {photos.length===1?'photo':'photos'}</span></button>:<button className="evidence-missing" onClick={()=>{setCheckId(f.checkId);setSelected(check.partId);setPanel(null);setCamera({checkId:f.checkId,findingId:f.id});}}><Camera size={24}/><span>Add photo</span></button>}</div><div className="defect-copy"><div className="defect-record-heading"><div><span className={'severity '+f.severity}>{f.severity}</span><span className="open-chip">Open</span></div></div><h4>{check.name}</h4><b>{f.type}</b><p>{f.notes}</p><div className="defect-meta">{photos.length?<span><Camera size={13}/>{photos.length} {photos.length===1?'photo':'photos'} attached</span>:<span className="missing"><AlertCircle size={13}/>Photo evidence needed</span>}</div><div className="defect-actions"><button onClick={()=>{focusCheck(f.checkId,true);setDetailTab('findings');}}>View or edit</button><button onClick={()=>apply({type:'edit-finding',id:f.id,patch:{resolved:true}})}><Check size={14}/>Mark rectified</button></div></div></article>;})}</section>)}
+    </section>:<section className="checklist-ledger" aria-label="Full inspection checklist">
+     <div className="simple-filters">{[['observed','Checked'],['unchecked','Unchecked'],['all','All']].map(([id,name])=><button key={id} className={filter===id?'active':''} onClick={()=>setFilter(id)}>{name}</button>)}</div>
+     <div className="grouped-checklist">{reportSections.map(group=>{const sectionComplete=completeness(record,group.checks);return <section className="report-category" key={group.name} aria-label={`${group.name} checklist`}><header><h3>{group.name}</h3><span>{sectionComplete.done}/{sectionComplete.total} checked</span></header><div className="simple-report-rows">{group.rows.length===0?<p className="category-empty">No {filter==='observed'?'checked':filter==='unchecked'?'unchecked':''} items in this category.</p>:group.rows.map(c=>{const status=statusOf(record,c.id),fs=record.findings.filter(f=>f.checkId===c.id);return <button key={c.id} data-check-id={c.id} onClick={()=>focusCheck(c.id,true)}><span className={'status-dot '+status}>{status==='not-inspected'?'?':status==='to-be-rectified'?'!':status==='not-applicable'?'−':'✓'}</span><span><b>{c.name}</b><small>{fs.length?fs.map(f=>f.type+' · '+f.severity).join(', '):STATUS[status]}</small></span>{record.photos.some(p=>p.checkId===c.id)&&<Camera size={16}/>}</button>;})}</div></section>;})}</div>
+    </section>}
+    <footer className="sheet-footer"><button className="primary" onClick={()=>{setPanel(null);setReview(true);}}>Review & export</button></footer>
+   </>}
    {panel==='detail'&&<DetailPanel record={record} partId={selected||'left-front-door'} checkId={checkId} onCheck={id=>focusCheck(id)} onMutate={apply} onCamera={openCamera} onPhoto={setPhoto} tab={detailTab} setTab={setDetailTab}/>}
    {panel==='history'&&<div className="simple-history">{record.history.length?record.history.slice().reverse().map(e=><div key={e.id}><p>{e.message}</p><small>{new Date(e.at).toLocaleTimeString()}</small></div>):<p>No changes yet.</p>}</div>}
    {panel==='about'&&<div className="simple-about"><p><strong>JARVICI</strong><br/>Just A Rather Very Intelligent Car Inspector</p><p>Inspired by Tony Stark’s JARVIS.</p><p>Tap the microphone. Name the part and what you see. The companion records it and updates the car.</p>
